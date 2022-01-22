@@ -7,4 +7,3 @@ coverage
 lib
 .vercel
 dist/
-!dist/public/index.html

@@ -7,6 +7,9 @@ COPY . .
 ARG APP_ID
 ARG PRIVATE_KEY
 ARG WEBHOOK_SECRET
+ARG PORT
+
 RUN pnpm build
 ENV NODE_ENV="production"
 CMD [ "npm", "start" ]
+

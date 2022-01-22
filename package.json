@@ -12,16 +12,17 @@
     "probot-app"
   ],
   "scripts": {
-    "dev": "tsup src/index.ts --watch --onSuccess \" probot run ./dist/index.js \" ",
-    "build": "tsup src/api/webhook/index.ts --outDir dist/api/webhook",
-    "start": "probot run ./dist/index.js"
+    "build": "tsup src/index.ts --outDir dist/",
+    "start": "probot run -p $PORT ./dist/index.js"
   },
   "dependencies": {
     "probot": "^11.0.1"
   },
   "devDependencies": {
+    "@octokit/webhooks": "^9.22.0",
     "@types/lodash": "^4.14.178",
     "@types/node": "^14.14.19",
+    "@vercel/node": "^1.12.1",
     "lodash": "^4.17.21",
     "smee-client": "^1.2.2",
     "tsup": "^5.11.11",
