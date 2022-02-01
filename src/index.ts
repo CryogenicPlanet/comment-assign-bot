@@ -1,72 +1,98 @@
 import { Probot, Context } from "probot";
-import type { WebhookEvent, EventPayloads } from '@octokit/webhooks'
-import _ from 'lodash'
+import type { WebhookEvent, EventPayloads } from "@octokit/webhooks";
+import _ from "lodash";
+import { discordWebhook } from "./internal";
 
-type Assignee = {login: string}
+type Assignee = { login: string };
 
-const assignInPull = async (probot: Probot, context:  WebhookEvent<EventPayloads.WebhookPayloadPullRequest> & Omit<Context<any>, keyof WebhookEvent<any>>) => {
-  let { name,  octokit, payload: { action } } = context
-  log(probot, `responds to ${name}.${action}`)
+const assignInPull = async (
+  probot: Probot,
+  context: WebhookEvent<EventPayloads.WebhookPayloadPullRequest> &
+    Omit<Context<any>, keyof WebhookEvent<any>>
+) => {
+  let {
+    name,
+    octokit,
+    payload: { action },
+  } = context;
+  log(probot, `responds to ${name}.${action}`);
 
-  let issue = context.issue()
-
-  let { data: { assignees, body } } = await octokit.pulls.get({...issue, pull_number: issue.issue_number})
-  let newAssignees = extractAssignees(assignees ? assignees: [], body || '')
-
-  let assigneesList = newAssignees.join(', ')
-  let { owner, repo, issue_number } = issue
-  log(probot, `assign [${assigneesList}] to ${owner}/${repo}#${issue_number}`)
-
-  let params = context.issue({ assignees: newAssignees })
-  await octokit.issues.addAssignees(params)
-}
-
-const assignInComment = async (probot: Probot,  context: WebhookEvent<EventPayloads.WebhookPayloadIssueComment> & Omit<Context<any>, keyof WebhookEvent<any>>) => {
-
-  let { octokit, payload, payload: { action } } = context
-  log(probot, `responds to ${context.name}.${action}`)
-
-  if (!payload.comment) {
-    return
-  }
-
-  let { comment: { id: commentId } } = payload
-  log(probot, `Comment info ${commentId}`)
-  let params = context.issue({ comment_id: commentId })
+  let issue = context.issue();
 
   let {
-    data: {
-      body,
-      user
-    }
-  } = await context.octokit.issues.getComment(params)
-  const commentAuthor = user?.login
-  if(!commentAuthor) return
-  log(probot, `remove comment author: ${commentAuthor}`)
+    data: { assignees, body },
+  } = await octokit.pulls.get({ ...issue, pull_number: issue.issue_number });
+  let newAssignees = extractAssignees(assignees ? assignees : [], body || "");
 
+  let assigneesList = newAssignees.join(", ");
+  let { owner, repo, issue_number } = issue;
+  log(probot, `assign [${assigneesList}] to ${owner}/${repo}#${issue_number}`);
 
-  let removeParams = context.issue({ assignees: [commentAuthor] })
-  await octokit.issues.removeAssignees(removeParams)
+  let params = context.issue({ assignees: newAssignees });
+  await octokit.issues.addAssignees(params);
+};
 
-  let newAssignees = extractAssignees([], body)
-  log(probot, `assign new assignees: [${newAssignees.join(', ')}]`)
-  let addParams = context.issue({ assignees: newAssignees })
-  await octokit.issues.addAssignees(addParams)
+const assignInComment = async (
+  probot: Probot,
+  context: WebhookEvent<EventPayloads.WebhookPayloadIssueComment> &
+    Omit<Context<any>, keyof WebhookEvent<any>>
+) => {
+  let {
+    octokit,
+    payload,
+    payload: { action },
+  } = context;
+  log(probot, `responds to ${context.name}.${action}`);
 
-  const newComment = context.issue({ body: `Assigned issue to ${newAssignees.map(val => `@${val}`).join(", ")}`})
+  if (!payload.comment) {
+    return;
+  }
 
-  await octokit.issues.createComment({...newComment})
- }
+  let {
+    comment: { id: commentId },
+  } = payload;
+  log(probot, `Comment info ${commentId}`);
+  let params = context.issue({ comment_id: commentId });
 
-const log =  (probot: Probot, message: string) => {
-  return probot.log(`[assign-in-comment] ${message}`)
-}
+  let {
+    data: { body, user },
+  } = await context.octokit.issues.getComment(params);
+  const commentAuthor = user?.login;
+  if (!commentAuthor) return;
+  log(probot, `remove comment author: ${commentAuthor}`);
+
+  let removeParams = context.issue({ assignees: [commentAuthor] });
+  await octokit.issues.removeAssignees(removeParams);
+
+  let newAssignees = extractAssignees([], body);
+  log(probot, `assign new assignees: [${newAssignees.join(", ")}]`);
+  let addParams = context.issue({ assignees: newAssignees });
+  await octokit.issues.addAssignees(addParams);
+
+  const newComment = context.issue({
+    body: `Assigned issue to ${newAssignees
+      .map((val) => `@${val}`)
+      .join(", ")}`,
+  });
+
+  const { owner } = context.issue();
+
+  const url = (await octokit.issues.createComment({ ...newComment })).url;
+
+  await discordWebhook(owner, newAssignees, url);
+};
+
+const log = (probot: Probot, message: string) => {
+  return probot.log(`[assign-in-comment] ${message}`);
+};
 
 export = (probot: Probot) => {
-  log(probot, 'assign-in-comment bot is on!')
-  probot.on('pull_request.opened', context => assignInPull(probot, context))
-  probot.on('pull_request.edited', context => assignInPull(probot, context))
-  probot.on('issue_comment.created', context => assignInComment(probot, context))
+  log(probot, "assign-in-comment bot is on!");
+  probot.on("pull_request.opened", (context) => assignInPull(probot, context));
+  probot.on("pull_request.edited", (context) => assignInPull(probot, context));
+  probot.on("issue_comment.created", (context) =>
+    assignInComment(probot, context)
+  );
   // For more information on building apps:
   // https://probot.github.io/docs/
 
@@ -74,35 +100,35 @@ export = (probot: Probot) => {
   // https://probot.github.io/docs/development/
 };
 
-function usernameReducer (acc: string[], line: string) {
-  const prefix = /^\/(assign|handover)\s+/ // /assign @user1
-  const prefix2 = /^\/(a|handover)\s+/ // /a @user1
+function usernameReducer(acc: string[], line: string) {
+  const prefix = /^\/(assign|handover)\s+/; // /assign @user1
+  const prefix2 = /^\/(a|handover)\s+/; // /a @user1
 
   if (!prefix.test(line) && !prefix2.test(line)) {
-    return acc
+    return acc;
   }
 
   let usernames = line
-    .replace(prefix, '')
+    .replace(prefix, "")
     .trim()
     .split(/\s+/)
-    .filter(login => login.startsWith('@'))
-    .map(username => username.replace(/^@/, ''))
+    .filter((login) => login.startsWith("@"))
+    .map((username) => username.replace(/^@/, ""));
 
-  return acc.concat(usernames)
+  return acc.concat(usernames);
 }
 
-const extractAssignees = (assignees: Assignee[], body = '') => {
+const extractAssignees = (assignees: Assignee[], body = "") => {
   if (!body) {
     // body might be null
-    return []
+    return [];
   }
 
-  let lines = body.split(/\n/).map(line => line.trim())
+  let lines = body.split(/\n/).map((line) => line.trim());
 
   return _.chain(lines)
     .reduce(usernameReducer, [])
-    .union(assignees.map(assignee => `${assignee.login}`))
+    .union(assignees.map((assignee) => `${assignee.login}`))
     .uniq()
-    .value()
-}
+    .value();
+};
