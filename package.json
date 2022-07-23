@@ -2,7 +2,7 @@
   "name": "comment-assign-bot",
   "version": "1.0.0",
   "private": true,
-  "description": "A bot that let's you assign user to PR with commentas",
+  "description": "A bot that let's you assign user to PR with comments",
   "author": "Rahul Tarak <cryogenicplanet@gmail.com>",
   "license": "ISC",
   "homepage": "https://github.com/CryogenicPlanet/comment-assign-bot",

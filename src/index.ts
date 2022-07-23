@@ -24,6 +24,10 @@ const assignInPull = async (
   } = await octokit.pulls.get({ ...issue, pull_number: issue.issue_number });
   let newAssignees = extractAssignees(assignees ? assignees : [], body || "");
 
+  if (newAssignees.length === 0) {
+    return;
+  }
+
   let assigneesList = newAssignees.join(", ");
   let { owner, repo, issue_number } = issue;
   log(probot, `assign [${assigneesList}] to ${owner}/${repo}#${issue_number}`);
@@ -65,6 +69,11 @@ const assignInComment = async (
   await octokit.issues.removeAssignees(removeParams);
 
   let newAssignees = extractAssignees([], body);
+
+  if (newAssignees.length === 0) {
+    return;
+  }
+
   log(probot, `assign new assignees: [${newAssignees.join(", ")}]`);
   let addParams = context.issue({ assignees: newAssignees });
   await octokit.issues.addAssignees(addParams);
@@ -121,6 +130,12 @@ function usernameReducer(acc: string[], line: string) {
 const extractAssignees = (assignees: Assignee[], body = "") => {
   if (!body) {
     // body might be null
+    return [];
+  }
+
+  /// check body has /a @user1 with regex
+  const prefix = /\/a\s+@([^\s]+)/; // /assign @user1
+  if (!prefix.test(body)) {
     return [];
   }
 
