@@ -71,7 +71,7 @@ const assignInComment = async (
   let newAssignees = extractAssignees([], body);
 
   if (newAssignees.length === 0) {
-    log(probot, `No assignees ${body}`)
+    log(probot, `No assignees ${body}`);
     return;
   }
 
@@ -111,10 +111,8 @@ export = (probot: Probot) => {
 };
 
 function usernameReducer(acc: string[], line: string) {
-  const prefix = /^\/(assign|handover)\s+/; // /assign @user1
-  const prefix2 = /^\/(a|handover)\s+/; // /a @user1
-
-  if (!prefix.test(line) && !prefix2.test(line)) {
+  const prefix = /\/a\s/; // /assign @user1
+  if (!prefix.test(line)) {
     return acc;
   }
 
