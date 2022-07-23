@@ -71,6 +71,7 @@ const assignInComment = async (
   let newAssignees = extractAssignees([], body);
 
   if (newAssignees.length === 0) {
+    log(probot, `No assignees ${body}`)
     return;
   }
 
