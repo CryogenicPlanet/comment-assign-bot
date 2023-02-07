@@ -15,6 +15,7 @@ export const engMap: Record<string, { name: string; discordId: string }> = {
   zackradisic: { name: "zack", discordId: "474327739311063061" },
   cryogenicplanet: { name: "rahul", discordId: "179264835618471936" },
   patheticgeek: { name: "geek", discordId: "537348830493016075" },
+  yug34: {name: "yug", discordId: "680027620578295819"},
 };
 
 export const discordWebhook = async (
